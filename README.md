@@ -12,3 +12,11 @@ If you are using this app with production or test hardware it is very likely tha
 To set the MapBox access token, app name, and app ID of this project, please follow the steps below.
 
 ### Setting App Keys
+
+1. To set your SDL **app name**, set `app_name` in app/src/main/res/values/strings.xml
+
+2. To set your SDL **app ID**, set `APP_ID`in app/src/main/java/com.livio.mobilenav/AppConstants.kt
+
+3. To set your [MapBox](https://www.mapbox.com/) access token, set `mapbox_access_token` in app/src/main/res/values/strings.xml and  `MAPBOX_DOWNLOADS_TOKEN` in gradle.properties
+
+Note that, at minimum, the [MapBox](https://www.mapbox.com/) access token must be set in order to use the app without SDL.

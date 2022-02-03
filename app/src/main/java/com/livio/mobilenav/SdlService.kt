@@ -65,6 +65,15 @@ import java.lang.ref.WeakReference
 import java.util.*
 
 class SdlService : Service() {
+    companion object {
+        // Arbitrary for the purposes of this app
+        private const val FOREGROUND_SERVICE_ID = 1234545
+        private const val HASH_ID = "356447790"
+        private const val PORT = 12345
+        private const val IP_ADDRESS = "192.168.1.56"
+        private const val TAG = "SdlService"
+    }
+
     //The manager handles communication between the application and SDL
     private var sdlManager: SdlManager? = null
     private var channel: NotificationChannel? = null
@@ -100,7 +109,7 @@ class SdlService : Service() {
         if (sdlManager == null) {
             val transport = MultiplexTransportConfig(
                 this,
-                Words.APP_ID,
+                APP_ID,
                 MultiplexTransportConfig.FLAG_MULTI_SECURITY_OFF
             )
 
@@ -160,7 +169,7 @@ class SdlService : Service() {
             val transportConfig = TCPTransportConfig(PORT, IP_ADDRESS, false)
             sdlManager = SdlManagerFactory.createSdlManager(
                 this,
-                Words.APP_ID,
+                APP_ID,
                 getString(R.string.app_name),
                 listener,
                 appType,
@@ -583,14 +592,5 @@ class SdlService : Service() {
         override fun onViewResized(width: Int, height: Int) {
             Log.i(TAG, String.format("Remote view new width and height (%d, %d)", width, height))
         }
-    }
-
-    companion object {
-        // Arbitrary for the purposes of this app
-        private const val FOREGROUND_SERVICE_ID = 1234545
-        private const val HASH_ID = "356447790"
-        private const val PORT = 12345
-        private const val IP_ADDRESS = "192.168.1.56"
-        private const val TAG = "SdlService"
     }
 }
