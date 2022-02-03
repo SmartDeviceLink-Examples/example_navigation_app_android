@@ -23,6 +23,35 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    flavorDimensions "default"
+    productFlavors {
+        multi_sec_high {
+            buildConfigField 'String', 'TRANSPORT', '"MULTI"'
+            buildConfigField 'String', 'SECURITY', '"HIGH"'
+        }
+        multi_sec_med {
+            buildConfigField 'String', 'TRANSPORT', '"MULTI"'
+            buildConfigField 'String', 'SECURITY', '"MED"'
+        }
+        multi_sec_low {
+            buildConfigField 'String', 'TRANSPORT', '"MULTI"'
+            buildConfigField 'String', 'SECURITY', '"LOW"'
+        }
+        multi_sec_off {
+            buildConfigField 'String', 'TRANSPORT', '"MULTI"'
+            buildConfigField 'String', 'SECURITY', '"OFF"'
+        }
+        multi_high_bandwidth {
+            buildConfigField 'String', 'TRANSPORT', '"MULTI_HB"'
+            buildConfigField 'String', 'SECURITY', '"OFF"'
+        }
+        tcp {
+            buildConfigField 'String', 'TRANSPORT', '"TCP"'
+            buildConfigField 'String', 'SECURITY', '"OFF"'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

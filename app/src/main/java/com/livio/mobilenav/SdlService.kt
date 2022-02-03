@@ -57,6 +57,7 @@ import com.smartdevicelink.proxy.rpc.listeners.OnRPCNotificationListener
 import com.smartdevicelink.proxy.rpc.listeners.OnRPCResponseListener
 import com.smartdevicelink.streaming.video.SdlRemoteDisplay
 import com.smartdevicelink.streaming.video.VideoStreamingParameters
+import com.smartdevicelink.transport.BaseTransportConfig
 import com.smartdevicelink.transport.MultiplexTransportConfig
 import com.smartdevicelink.transport.TCPTransportConfig
 import com.smartdevicelink.util.DebugTool
@@ -69,8 +70,6 @@ class SdlService : Service() {
         // Arbitrary for the purposes of this app
         private const val FOREGROUND_SERVICE_ID = 1234545
         private const val HASH_ID = "356447790"
-        private const val PORT = 12345
-        private const val IP_ADDRESS = "192.168.1.56"
         private const val TAG = "SdlService"
     }
 
@@ -106,12 +105,58 @@ class SdlService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        startProxy()
+        return START_STICKY
+    }
+
+    private fun startProxy() {
+        // This logic is to select the correct transport and security levels defined in the selected build flavor
+        // Build flavors are selected by the "build variants" tab typically located in the bottom left of Android Studio
+        // Typically in your app, you will only set one of these.
         if (sdlManager == null) {
-            val transport = MultiplexTransportConfig(
-                this,
-                APP_ID,
-                MultiplexTransportConfig.FLAG_MULTI_SECURITY_OFF
-            )
+            Log.i(TAG, "Starting SDL Proxy")
+            // Enable DebugTool for debug build type
+            // Enable DebugTool for debug build type
+            if (BuildConfig.DEBUG) {
+                DebugTool.enableDebugTool()
+            }
+            var transport: BaseTransportConfig? = null
+            when {
+                BuildConfig.TRANSPORT.equals("MULTI") -> {
+                    val securityLevel: Int = when {
+                        BuildConfig.SECURITY.equals("HIGH") -> {
+                            MultiplexTransportConfig.FLAG_MULTI_SECURITY_HIGH
+                        }
+                        BuildConfig.SECURITY.equals("MED") -> {
+                            MultiplexTransportConfig.FLAG_MULTI_SECURITY_MED
+                        }
+                        BuildConfig.SECURITY.equals("LOW") -> {
+                            MultiplexTransportConfig.FLAG_MULTI_SECURITY_LOW
+                        }
+                        else -> {
+                            MultiplexTransportConfig.FLAG_MULTI_SECURITY_OFF
+                        }
+                    }
+                    transport = MultiplexTransportConfig(this, APP_ID, securityLevel)
+                }
+                BuildConfig.TRANSPORT.equals("TCP") -> {
+                    transport =
+                        TCPTransportConfig(
+                            PORT,
+                            IP_ADDRESS,
+                            true
+                        )
+                }
+                BuildConfig.TRANSPORT.equals("MULTI_HB") -> {
+                    val mtc = MultiplexTransportConfig(
+                        this,
+                        APP_ID,
+                        MultiplexTransportConfig.FLAG_MULTI_SECURITY_OFF
+                    )
+                    mtc.setRequiresHighBandwidth(true)
+                    transport = mtc
+                }
+            }
 
             // The app type to be used
             val appType = Vector<AppHMIType>()
@@ -166,7 +211,6 @@ class SdlService : Service() {
 
             // Create App Icon, this is set in the SdlManager builder
             val appIcon = SdlArtwork(null, FileType.GRAPHIC_PNG, R.mipmap.ic_launcher, true)
-            val transportConfig = TCPTransportConfig(PORT, IP_ADDRESS, false)
             sdlManager = SdlManagerFactory.createSdlManager(
                 this,
                 APP_ID,
@@ -174,14 +218,15 @@ class SdlService : Service() {
                 listener,
                 appType,
                 appIcon,
-                transportConfig,
+                transport,
                 Language.EN_US,
                 HASH_ID
             )
             //addTextWithScreenManager();
-            sdlManager?.start()
         }
-        return START_STICKY
+
+
+        sdlManager?.start()
     }
 
     override fun onDestroy() {

@@ -20,3 +20,12 @@ To set the MapBox access token, app name, and app ID of this project, please fol
 3. To set your [MapBox](https://www.mapbox.com/) access token, set `mapbox_access_token` in app/src/main/res/values/strings.xml and  `MAPBOX_DOWNLOADS_TOKEN` in gradle.properties
 
 Note that, at minimum, the [MapBox](https://www.mapbox.com/) access token must be set in order to use the app without SDL.
+
+### Setting Connection Type
+
+By default, the app will attempt to connect via a multiplex connection after launch. A multiplex connection allows you to connect to production or test hardware using a USB cord or Bluetooth. If you would like to test with an emulator you will need to configure a TCP (i.e. WiFi) connection. To set connection type, select the matching active build variant in Android Studio.
+
+When using a TCP connection, you will need to set `IP_ADDRESS` and `PORT` in app/src/main/java/com.livio.mobilenav/AppConstants.kt
+
+
+For more information about connection types, please [refer to our guide](https://smartdevicelink.com/en/guides/android/getting-started/connecting-to-an-infotainment-system/).

@@ -5,11 +5,10 @@ import android.content.Context;
 import com.smartdevicelink.managers.SdlManager;
 import com.smartdevicelink.managers.SdlManagerListener;
 import com.smartdevicelink.managers.file.filetypes.SdlArtwork;
-import com.smartdevicelink.managers.lockscreen.LockScreenConfig;
 import com.smartdevicelink.proxy.rpc.enums.AppHMIType;
 import com.smartdevicelink.proxy.rpc.enums.Language;
+import com.smartdevicelink.transport.BaseTransportConfig;
 import com.smartdevicelink.transport.MultiplexTransportConfig;
-import com.smartdevicelink.transport.TCPTransportConfig;
 
 import java.util.Vector;
 
@@ -21,7 +20,7 @@ public class SdlManagerFactory {
                                               SdlManagerListener listener,
                                               Vector<AppHMIType> appTypes,
                                               SdlArtwork appIcon,
-                                              TCPTransportConfig transportConfig,
+                                              BaseTransportConfig transportConfig,
                                               Language language,
                                               String resumeHash) {
 

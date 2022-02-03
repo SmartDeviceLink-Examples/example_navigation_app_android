@@ -133,8 +133,14 @@ class MainActivity : AppCompatActivity() {
         instance = WeakReference(this)
 
         setContentView(R.layout.activity_main)
-        //val proxyIntent = Intent(this, SdlService::class.java)
-        //startService(proxyIntent)
+        //If we are connected to a module we want to start our SdlService
+        //If we are connected to a module we want to start our SdlService
+        /*if (BuildConfig.TRANSPORT == "MULTI" || BuildConfig.TRANSPORT == "MULTI_HB") {
+            SdlReceiver.queryForConnectedService(this)
+        } else if (BuildConfig.TRANSPORT == "TCP") {
+            val proxyIntent = Intent(this, SdlService::class.java)
+            startService(proxyIntent)
+        }*/
         //searchBar = findViewById(R.id.search_bar)
         //searchButton = findViewById(R.id.search_button)
         mapView = findViewById(R.id.map_view)
