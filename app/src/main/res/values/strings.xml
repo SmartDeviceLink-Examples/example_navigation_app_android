@@ -4,4 +4,8 @@
     <string name="notification_content">Navigation</string>
     <string name="the_important_stuff_is_on_the_hmi">The important stuff is on the HMI</string>
     <string name="mapbox_access_token" translatable="false">USE PERSONAL TOKEN</string>
+    <string name="zoom_out">Zoom out</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="search">Search</string>
+    <string name="menu">Menu</string>
 </resources>

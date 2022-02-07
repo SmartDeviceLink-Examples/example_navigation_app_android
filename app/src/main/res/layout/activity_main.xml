@@ -1,49 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:orientation="vertical">
+    tools:context=".MainActivity">
 
-    <!--<LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="1">
-        <EditText
-            android:id="@+id/search_bar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:autofillHints=""
-            android:layout_weight="0.75"/>
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/search_button"
-            android:text="Search"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.25"/>
-    </LinearLayout>-->
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
         <com.mapbox.maps.MapView
             android:id="@+id/map_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/menu_button"
+            app:tint="@color/white"
+            android:text="@string/menu"
+            android:textSize="22sp"
+            android:textColor="@color/white"
+            android:padding="10dp"
+            android:backgroundTint="@color/nav_blue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="60dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="20dp"
+            tools:ignore="RelativeOverlap" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/search_button"
+            android:src="@drawable/search"
+            app:tint="@color/white"
+            android:backgroundTint="@color/nav_blue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="60dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="20dp"
+            android:contentDescription="@string/search"
+            tools:ignore="RelativeOverlap" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/zoom_in_button"
+            android:src="@drawable/zoom_in"
+            app:tint="@color/white"
+            android:backgroundTint="@color/nav_blue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/zoom_out_button"
+            android:layout_alignParentEnd="true"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/zoom_in" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/zoom_out_button"
+            android:src="@drawable/zoom_out"
+            app:tint="@color/white"
+            android:backgroundTint="@color/nav_blue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/recenter_location_button"
+            android:layout_alignParentEnd="true"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginVertical="5dp"
+            android:contentDescription="@string/zoom_out" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/recenter_location_button"
-            android:src="@drawable/mapbox_ic_recenter"
-            android:foregroundTint="@color/mapbox_recenter_drawable_color"
+            android:src="@drawable/recenter_location"
+            app:tint="@color/white"
+            android:backgroundTint="@color/nav_blue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
-            android:layout_margin="20dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="20dp"
             android:contentDescription="@string/mapbox_recenter" />
-    </RelativeLayout>
 
-</LinearLayout>
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:elevation="@dimen/search_card_elevation">
+                <com.mapbox.search.ui.view.SearchBottomSheetView
+                    android:id="@+id/search_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:elevation="@dimen/search_card_elevation"
+                    />
+
+                <com.mapbox.search.ui.view.place.SearchPlaceBottomSheetView
+                    android:id="@+id/search_place_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:elevation="@dimen/search_card_elevation"
+                    />
+
+                <com.mapbox.search.ui.view.category.SearchCategoriesBottomSheetView
+                    android:id="@+id/search_categories_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:elevation="@dimen/search_card_elevation"
+                    />
+
+                <com.mapbox.search.ui.view.feedback.SearchFeedbackBottomSheetView
+                    android:id="@+id/search_feedback_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:elevation="@dimen/search_card_elevation"
+                    />
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</RelativeLayout>
