@@ -70,19 +70,10 @@ class MainActivity : AppCompatActivity() {
             return instance
         }
 
-        val markersPaddings: EdgeInsets = dpToPx(64).toDouble()
-            .let { mapPadding ->
-                EdgeInsets(mapPadding, mapPadding, mapPadding, mapPadding)
-            }
-
-        fun createSearchPinDrawable(): Drawable? {
+        private fun createSearchPinDrawable(): Drawable? {
             return instance?.get()?.let { it ->
                 ContextCompat.getDrawable(it, R.drawable.red_marker)
             }
-        }
-
-        fun dpToPx(dp: Int): Int {
-            return (dp * Resources.getSystem().displayMetrics.density).toInt()
         }
     }
 
