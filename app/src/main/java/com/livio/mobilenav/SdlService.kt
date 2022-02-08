@@ -18,7 +18,6 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.provider.UserDictionary.Words
 import android.util.Log
 import android.view.Display
 import androidx.appcompat.content.res.AppCompatResources
@@ -34,11 +33,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
-import com.mapbox.maps.Style.Companion.MAPBOX_STREETS
-import com.mapbox.maps.Style.Companion.SATELLITE
-import com.mapbox.maps.extension.observable.subscribeCameraChange
 import com.mapbox.maps.extension.style.expressions.generated.Expression
-import com.mapbox.maps.extension.style.expressions.generated.Expression.Companion.interpolate
 import com.mapbox.maps.extension.style.image.image
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
 import com.mapbox.maps.plugin.LocationPuck2D
@@ -47,7 +42,6 @@ import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
-import com.mapbox.maps.plugin.delegates.listeners.OnCameraChangeListener
 import com.mapbox.maps.plugin.gestures.OnRotateListener
 import com.mapbox.maps.plugin.gestures.OnScaleListener
 import com.mapbox.maps.plugin.gestures.OnShoveListener
@@ -58,7 +52,6 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
-import com.mapbox.navigation.core.MapboxNavigationProvider.create
 import com.mapbox.search.MapboxSearchSdk
 import com.mapbox.search.ui.view.CommonSearchViewConfiguration
 import com.mapbox.search.ui.view.DistanceUnitType
@@ -85,7 +78,6 @@ import com.smartdevicelink.proxy.rpc.enums.*
 import com.smartdevicelink.proxy.rpc.listeners.OnRPCNotificationListener
 import com.smartdevicelink.proxy.rpc.listeners.OnRPCResponseListener
 import com.smartdevicelink.streaming.video.SdlRemoteDisplay
-import com.smartdevicelink.streaming.video.VideoStreamingParameters
 import com.smartdevicelink.transport.BaseTransportConfig
 import com.smartdevicelink.transport.MultiplexTransportConfig
 import com.smartdevicelink.transport.TCPTransportConfig
