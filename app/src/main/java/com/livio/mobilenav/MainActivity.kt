@@ -91,6 +91,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var feedbackBottomSheetView: SearchFeedbackBottomSheetView
 
     @Volatile private var centerMap = true
+    @Volatile private var indicatorPosition: Point? = null
+    @Volatile private var indicatorBearing: Double? = null
 
     private val clickListener =  { _: Point ->
         searchBottomSheetView.hide()
@@ -149,12 +151,14 @@ class MainActivity : AppCompatActivity() {
 
     private val onIndicatorBearingChangedListener = OnIndicatorBearingChangedListener {
         if (centerMap) {
+            indicatorBearing = it
             mapView?.getMapboxMap()?.setCamera(CameraOptions.Builder().bearing(it).build())
         }
     }
 
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener {
         if (centerMap) {
+            indicatorPosition = it
             mapView?.getMapboxMap()?.setCamera(CameraOptions.Builder().center(it).build())
             mapView?.gestures?.focalPoint = mapView?.getMapboxMap()?.pixelForCoordinate(it)
         }
@@ -402,7 +406,14 @@ class MainActivity : AppCompatActivity() {
         zoomOutButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_OUT_SCALE, null) }
         recenterButton.setOnClickListener {
             centerMap = true
-            mapView?.getMapboxMap()?.setCamera(CameraOptions.Builder().zoom(DEFAULT_ZOOM).build())
+            val cameraOptionsBuilder = CameraOptions.Builder().zoom(DEFAULT_ZOOM)
+            indicatorPosition?.let {
+                cameraOptionsBuilder.center(it)
+            }
+            indicatorBearing?.let {
+                cameraOptionsBuilder.bearing(it)
+            }
+            mapView?.getMapboxMap()?.setCamera(cameraOptionsBuilder.build())
             pointAnnotationManager?.deleteAll()
         }
     }
