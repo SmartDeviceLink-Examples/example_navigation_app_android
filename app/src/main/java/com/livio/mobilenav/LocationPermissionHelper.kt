@@ -4,12 +4,18 @@ package com.livio.mobilenav
  * This class is based on the class found here: https://github.com/mapbox/mapbox-maps-android/blob/android-v10.2.0/app/src/main/java/com/mapbox/maps/testapp/utils/LocationPermissionHelper.kt
  */
 
-import android.app.Activity
+//
+//  LocationPermissionHelper.kt
+//  MobileNav
+//
+//  Created by Noah Stanford on 2/2/2022.
+//  Copyright © 2021 Ford. All rights reserved.
+//
+
 import android.content.Context
 import android.widget.Toast
 import com.mapbox.android.core.permissions.PermissionsListener
 import com.mapbox.android.core.permissions.PermissionsManager
-import com.smartdevicelink.streaming.video.SdlRemoteDisplay
 import java.lang.ref.WeakReference
 
 class LocationPermissionHelper(val context: WeakReference<Context>) {

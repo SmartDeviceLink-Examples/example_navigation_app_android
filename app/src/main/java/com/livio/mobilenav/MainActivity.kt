@@ -1,5 +1,13 @@
 package com.livio.mobilenav
 
+//
+//  MainActivity.kt
+//  MobileNav
+//
+//  Created by Noah Stanford on 2/2/2022.
+//  Copyright © 2021 Ford. All rights reserved.
+//
+
 import android.Manifest
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
