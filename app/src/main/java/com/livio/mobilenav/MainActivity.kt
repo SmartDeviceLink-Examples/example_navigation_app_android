@@ -9,6 +9,7 @@ package com.livio.mobilenav
 //
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
@@ -177,12 +178,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         //If we are connected to a module we want to start our SdlService
         //If we are connected to a module we want to start our SdlService
-        /*if (BuildConfig.TRANSPORT == "MULTI" || BuildConfig.TRANSPORT == "MULTI_HB") {
+        if (BuildConfig.TRANSPORT == "MULTI" || BuildConfig.TRANSPORT == "MULTI_HB") {
             SdlReceiver.queryForConnectedService(this)
         } else if (BuildConfig.TRANSPORT == "TCP") {
             val proxyIntent = Intent(this, SdlService::class.java)
             startService(proxyIntent)
-        }*/
+        }
         searchButton = findViewById(R.id.search_button)
         mapView = findViewById(R.id.map_view)
         val annotationApi = mapView?.annotations
