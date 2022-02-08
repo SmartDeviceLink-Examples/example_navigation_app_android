@@ -2,7 +2,6 @@
     <string name="app_name" translatable="false">MobileNav</string>
     <string name="app_short_name" translatable="false">mobilenav</string>
     <string name="notification_content">Navigation</string>
-    <string name="the_important_stuff_is_on_the_hmi">The important stuff is on the HMI</string>
     <string name="mapbox_access_token" translatable="false">USE PERSONAL TOKEN</string>
     <string name="zoom_out">Zoom out</string>
     <string name="zoom_in">Zoom in</string>
