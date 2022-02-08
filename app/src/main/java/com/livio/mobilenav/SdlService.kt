@@ -196,7 +196,7 @@ class SdlService : Service() {
                                     return
                                 }
                                 if (onHMIStatus.hmiLevel == HMILevel.HMI_FULL) {
-                                    //startVideoStream()
+                                    startVideoStream()
                                 }
 
                                 if (onHMIStatus.hmiLevel == HMILevel.HMI_NONE) {
@@ -628,7 +628,9 @@ class SdlService : Service() {
                 onMapReady()
             }
             searchBottomSheetView.apply {
-                initializeSearch(savedInstanceState, SearchBottomSheetView.Configuration())
+                savedInstanceState?.let {
+                    initializeSearch(savedInstanceState, SearchBottomSheetView.Configuration())
+                }
                 hide()
                 isHideableByDrag = true
                 addOnCategoryClickListener{ openCategory(it) }
@@ -657,7 +659,9 @@ class SdlService : Service() {
                 addOnNavigateClickListener { searchPlace -> showMarker(searchPlace.coordinate) }
             }
             feedbackBottomSheetView.apply {
-                initialize(savedInstanceState)
+                savedInstanceState?.let {
+                    initialize(savedInstanceState)
+                }
             }
 
         }
