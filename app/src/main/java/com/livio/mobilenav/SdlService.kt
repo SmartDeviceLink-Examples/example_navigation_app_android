@@ -64,19 +64,11 @@ import com.smartdevicelink.managers.SdlManager
 import com.smartdevicelink.managers.SdlManagerListener
 import com.smartdevicelink.managers.file.filetypes.SdlArtwork
 import com.smartdevicelink.managers.lifecycle.LifecycleConfigurationUpdate
-import com.smartdevicelink.managers.screen.AlertAudioData
-import com.smartdevicelink.managers.screen.AlertView
-import com.smartdevicelink.managers.screen.SoftButtonObject
-import com.smartdevicelink.managers.screen.SoftButtonState
-import com.smartdevicelink.managers.screen.menu.MenuCell
-import com.smartdevicelink.managers.screen.menu.MenuConfiguration
 import com.smartdevicelink.protocol.enums.FunctionID
 import com.smartdevicelink.proxy.RPCNotification
-import com.smartdevicelink.proxy.RPCResponse
 import com.smartdevicelink.proxy.rpc.*
 import com.smartdevicelink.proxy.rpc.enums.*
 import com.smartdevicelink.proxy.rpc.listeners.OnRPCNotificationListener
-import com.smartdevicelink.proxy.rpc.listeners.OnRPCResponseListener
 import com.smartdevicelink.streaming.video.SdlRemoteDisplay
 import com.smartdevicelink.transport.BaseTransportConfig
 import com.smartdevicelink.transport.MultiplexTransportConfig
@@ -97,14 +89,9 @@ class SdlService : Service() {
     //The manager handles communication between the application and SDL
     private var sdlManager: SdlManager? = null
     private var channel: NotificationChannel? = null
-    private val settingList: MutableList<String> = ArrayList()
-    private var settingIndex = 0
 
     override fun onCreate() {
         super.onCreate()
-        settingList.add("Hello")
-        settingList.add("There")
-        settingList.add("Friends")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             channel = NotificationChannel(
                 applicationInfo.packageName,
@@ -136,7 +123,6 @@ class SdlService : Service() {
         // Typically in your app, you will only set one of these.
         if (sdlManager == null) {
             Log.i(TAG, "Starting SDL Proxy")
-            // Enable DebugTool for debug build type
             // Enable DebugTool for debug build type
             if (BuildConfig.DEBUG) {
                 DebugTool.enableDebugTool()
@@ -243,7 +229,6 @@ class SdlService : Service() {
                 Language.EN_US,
                 HASH_ID
             )
-            //addTextWithScreenManager();
         }
 
 
@@ -251,7 +236,6 @@ class SdlService : Service() {
     }
 
     override fun onDestroy() {
-        //...
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (notificationManager != null && channel != null) { //If this is the only notification on your channel
@@ -265,197 +249,6 @@ class SdlService : Service() {
     override fun onBind(intent: Intent): IBinder? {
         // TODO: Return the communication channel to the service.
         throw UnsupportedOperationException("Not yet implemented")
-    }
-
-    private fun addTextWithScreenManager(text: String) {
-        sdlManager?.screenManager?.beginTransaction()
-        sdlManager?.screenManager?.textField1 = text
-        sdlManager?.screenManager?.commit { success: Boolean ->
-            if (success) {
-                DebugTool.logInfo(TAG, "Text set successfully")
-                Log.i(TAG, "Text set successfully")
-            } else {
-                Log.i(TAG, "Text set failed")
-            }
-        }
-    }
-
-    private fun addButtonsWithScreenManager() {
-        val softButtonObjects: MutableList<SoftButtonObject> = ArrayList()
-        val previousSettingState = SoftButtonState("previousSettingState", "Previous Setting", null)
-        val previousSettingButton = SoftButtonObject(
-            "previousSettingButton",
-            previousSettingState,
-            object : SoftButtonObject.OnEventListener {
-                override fun onPress(
-                    softButtonObject: SoftButtonObject,
-                    onButtonPress: OnButtonPress
-                ) {
-                    settingIndex = (settingIndex - 1 + settingList.size) % settingList.size
-                    addTextWithScreenManager(settingList[settingIndex])
-                }
-
-                override fun onEvent(
-                    softButtonObject: SoftButtonObject,
-                    onButtonEvent: OnButtonEvent
-                ) {
-                }
-            })
-        softButtonObjects.add(previousSettingButton)
-        val nextSettingState = SoftButtonState("nextSettingState", "Next Setting", null)
-        val nextSettingButton = SoftButtonObject(
-            "nextSettingButton",
-            nextSettingState,
-            object : SoftButtonObject.OnEventListener {
-                override fun onPress(
-                    softButtonObject: SoftButtonObject,
-                    onButtonPress: OnButtonPress
-                ) {
-                    settingIndex = (settingIndex + 1 + settingList?.size) % settingList?.size
-                    addTextWithScreenManager(settingList[settingIndex])
-                }
-
-                override fun onEvent(
-                    softButtonObject: SoftButtonObject,
-                    onButtonEvent: OnButtonEvent
-                ) {
-                }
-            })
-        softButtonObjects.add(nextSettingButton)
-        val addSettingState = SoftButtonState("addSettingState", "Add", null)
-        val addSettingButton = SoftButtonObject(
-            "addSettingButton",
-            addSettingState,
-            object : SoftButtonObject.OnEventListener {
-                override fun onPress(
-                    softButtonObject: SoftButtonObject,
-                    onButtonPress: OnButtonPress
-                ) {
-                }
-
-                override fun onEvent(
-                    softButtonObject: SoftButtonObject,
-                    onButtonEvent: OnButtonEvent
-                ) {
-                }
-            })
-        softButtonObjects.add(addSettingButton)
-        val applySettingState = SoftButtonState("applySettingState", "Add", null)
-        val applySettingButton = SoftButtonObject(
-            "applySettingButton",
-            applySettingState,
-            object : SoftButtonObject.OnEventListener {
-                override fun onPress(
-                    softButtonObject: SoftButtonObject,
-                    onButtonPress: OnButtonPress
-                ) {
-                }
-
-                override fun onEvent(
-                    softButtonObject: SoftButtonObject,
-                    onButtonEvent: OnButtonEvent
-                ) {
-                }
-            })
-        softButtonObjects.add(applySettingButton)
-        sdlManager?.screenManager?.beginTransaction()
-        sdlManager?.screenManager?.softButtonObjects = softButtonObjects
-        sdlManager?.screenManager?.commit { success: Boolean ->
-            if (success) {
-                DebugTool.logInfo(TAG, "Button set successfully")
-                Log.i(TAG, "Button set successfully")
-            } else {
-                Log.i(TAG, "Button set failed")
-            }
-        }
-    }
-
-    fun setMenu() {
-        val mainMenuLayout = MenuLayout.TILES
-        val submenuLayout = MenuLayout.LIST
-        val menuConfiguration = MenuConfiguration(mainMenuLayout, submenuLayout)
-        val cellList: MutableList<MenuCell> = ArrayList()
-        val cell = MenuCell(
-            "Cell text",
-            "Secondary Text",
-            "Tertiary Text",
-            null,
-            null,
-            listOf("cell text")
-        ) { trigger: TriggerSource? -> }
-        cellList.add(cell)
-        val innerCell = MenuCell(
-            "inner menu cell",
-            "secondary text",
-            "tertiary test",
-            null,
-            null,
-            listOf("inner menu cell")
-        ) { trigger: TriggerSource? -> }
-        val subCell = MenuCell(
-            "cell",
-            "secondary text",
-            "tertiary text",
-            MenuLayout.LIST,
-            null,
-            null,
-            listOf(innerCell)
-        )
-        cellList.add(subCell)
-        sdlManager?.screenManager?.beginTransaction()
-        sdlManager?.screenManager?.menuConfiguration = menuConfiguration
-        sdlManager?.screenManager?.menu = cellList
-        sdlManager?.screenManager?.commit { success: Boolean ->
-            if (success) {
-                DebugTool.logInfo(TAG, "Menu set successfully")
-                Log.i(TAG, "Menu set successfully")
-            } else {
-                Log.i(TAG, "Menu set failed")
-            }
-        }
-    }
-
-    private fun buildSampleAlert(): AlertView {
-        val builder = AlertView.Builder()
-        return builder.setText("Sample Alert")
-            .setSecondaryText("Secondary Text")
-            .setAudio(AlertAudioData("Sample Alert. Testing 1 2 3."))
-            .setTimeout(5)
-            .build()
-    }
-
-    private fun showSampleSlider() {
-        val slider = Slider()
-        slider.numTicks = 5
-        slider.position = 5
-        slider.sliderHeader = "A sweet sample header"
-        slider.sliderFooter = listOf("A sweet sample footer")
-        slider.cancelID = 99999
-        slider.onRPCResponseListener = object : OnRPCResponseListener() {
-            override fun onResponse(correlationId: Int, response: RPCResponse) {
-                if (response.success) {
-                    val sliderResponse = response as SliderResponse
-                    Log.i(TAG, "Slider position set: " + sliderResponse.sliderPosition)
-                }
-            }
-        }
-        sdlManager?.sendRPC(slider)
-    }
-
-    private fun showSampleScrollableMessage() {
-        val scrollableMessageText =
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.Vestibulum mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare. Purus in massa tempor nec feugiat nisl pretium fusce id. Pharetra convallis posuere morbi leo urna molestie at elementum eu. Dictum sit amet justo donec enim diam."
-        val softButton1 = SoftButton(SoftButtonType.SBT_TEXT, 65534)
-        softButton1.text = "Button 1"
-        val softButton2 = SoftButton(SoftButtonType.SBT_TEXT, 65533)
-        softButton2.text = "Button 2"
-        val softButtonList = listOf(softButton1, softButton2)
-        val scrollableMessage = ScrollableMessage()
-            .setScrollableMessageBody(scrollableMessageText)
-            .setTimeout(5000)
-            .setSoftButtons(softButtonList)
-        scrollableMessage.cancelID = 99998
-        sdlManager?.sendRPC(scrollableMessage)
     }
 
     fun startVideoStream() {
