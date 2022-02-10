@@ -97,7 +97,30 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center_horizontal"
-            android:elevation="@dimen/search_card_elevation" />
+            android:elevation="@dimen/search_card_elevation" />-->
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/search_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/search"
+            style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            android:theme="@style/Widget.MaterialComponents.TextInputLayout.FilledBox"
+            app:endIconMode="custom"
+            app:endIconDrawable="@drawable/done">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ListView
+            android:id="@+id/search_list_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </RelativeLayout>

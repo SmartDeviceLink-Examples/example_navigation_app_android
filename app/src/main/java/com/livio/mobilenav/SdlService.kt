@@ -20,11 +20,22 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import android.view.Display
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.*
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.widget.addTextChangedListener
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.mapbox.android.core.location.LocationEngineProvider
 import com.mapbox.android.gestures.RotateGestureDetector
 import com.mapbox.android.gestures.ShoveGestureDetector
@@ -52,7 +63,9 @@ import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.navigation.base.options.NavigationOptions
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
-import com.mapbox.search.MapboxSearchSdk
+import com.mapbox.search.*
+import com.mapbox.search.result.SearchResult
+import com.mapbox.search.result.SearchSuggestion
 import com.mapbox.search.ui.view.CommonSearchViewConfiguration
 import com.mapbox.search.ui.view.DistanceUnitType
 import com.mapbox.search.ui.view.SearchBottomSheetView
@@ -77,8 +90,11 @@ import com.smartdevicelink.util.DebugTool
 import com.smartdevicelink.util.SystemInfo
 import java.lang.ref.WeakReference
 import java.util.*
+import com.mapbox.search.ui.R as MapR
+import com.mapbox.search.ui.utils.maki.*
+import com.smartdevicelink.proxy.rpc.enums.Language
 
-class SdlService : Service() {
+class SdlService : Service(){
     companion object {
         // Arbitrary for the purposes of this app
         private const val FOREGROUND_SERVICE_ID = 1234545
@@ -272,12 +288,13 @@ class SdlService : Service() {
     }
 
     class MapRemoteDisplay(context: Context?, display: Display?) :
-        SdlRemoteDisplay(context, display) {
+        SdlRemoteDisplay(context, display){
 
         companion object {
             private val DEFAULT_ZOOM = 18.0
             private val ZOOM_IN_SCALE = 2.0
             private val ZOOM_OUT_SCALE = 0.5
+            private val METERS_TO_MILES_FACTOR = 0.00062137119224
             const val SEARCH_PIN_SOURCE_ID = "search.pin.source.id"
             const val SEARCH_PIN_IMAGE_ID = "search.pin.image.id"
             const val SEARCH_PIN_LAYER_ID = "search.pin.layer.id"
@@ -286,6 +303,10 @@ class SdlService : Service() {
                 return MainActivity.getNewestInstance()?.get()?.let { it ->
                     ContextCompat.getDrawable(it, R.drawable.red_marker)
                 }
+            }
+
+            private fun metersToMiles(meters: Double): Double {
+                return METERS_TO_MILES_FACTOR * meters
             }
         }
 
@@ -297,29 +318,112 @@ class SdlService : Service() {
         private lateinit var zoomInButton: FloatingActionButton
         private lateinit var zoomOutButton: FloatingActionButton
         private lateinit var recenterButton: FloatingActionButton
+        private lateinit var searchCoordinator: CoordinatorLayout
+        private lateinit var searchBox: TextInputLayout
+        private lateinit var searchListView: ListView
 
-        private lateinit var searchBottomSheetView: SearchBottomSheetView
-        private lateinit var searchPlaceView: SearchPlaceBottomSheetView
-        private lateinit var searchCategoriesView: SearchCategoriesBottomSheetView
-        private lateinit var feedbackBottomSheetView: SearchFeedbackBottomSheetView
-
-        @Volatile private var centerMap = true
+        @Volatile private var centerMap = false
         @Volatile private var indicatorPosition: Point? = null
         @Volatile private var indicatorBearing: Double? = null
 
+        private val searchEngine = MapboxSearchSdk.getSearchEngine()
+
+        private class SearchViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            lateinit var resultIcon: ImageView
+            lateinit var searchResultName: TextView
+            lateinit var searchResultAddress: TextView
+            lateinit var searchResultDistance: TextView
+            lateinit var resultPopulate: ImageView
+        }
+
+        private val searchListAdapter = context?.let {
+            object : ArrayAdapter<SearchSuggestion>(it, MapR.layout.mapbox_search_sdk_result_item_layout) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    var currentView: View
+                    if (convertView != null) {
+                        currentView = convertView
+                    } else {
+                        currentView = LayoutInflater.from(it).inflate(R.layout.search_list_item, parent, false)
+                        val viewHolder = SearchViewHolder(currentView)
+                        viewHolder.resultIcon = findViewById(MapR.id.result_icon)
+                        viewHolder.searchResultName = findViewById(MapR.id.search_result_name)
+                        viewHolder.searchResultAddress = findViewById(MapR.id.search_result_address)
+                        viewHolder.searchResultDistance = findViewById(MapR.id.search_result_distance)
+                        viewHolder.resultPopulate = findViewById(MapR.id.result_populate)
+                        currentView.tag = viewHolder
+                    }
+
+                    val searchSuggestion = getItem(position)
+                    val viewHolder = currentView.tag as SearchViewHolder
+                    viewHolder.resultIcon.setImageDrawable(null)
+                    viewHolder.resultIcon.visibility = View.GONE
+                    viewHolder.searchResultName.text = searchSuggestion?.name
+                    viewHolder.searchResultAddress.text = searchSuggestion?.address?.formattedAddress()
+                    viewHolder.searchResultDistance.text = searchSuggestion?.distanceMeters?.let { it1 -> metersToMiles(it1).toString() }
+
+                    return currentView
+                }
+
+            }
+        }
+
+        private val searchCallback = object : SearchSuggestionsCallback {
+            override fun onError(e: Exception) {
+                e.printStackTrace()
+            }
+
+            override fun onSuggestions(
+                suggestions: List<SearchSuggestion>,
+                responseInfo: ResponseInfo
+            ) {
+                searchListAdapter?.clear()
+                searchListAdapter?.addAll(suggestions)
+                searchListAdapter?.notifyDataSetChanged()
+            }
+
+        }
+
+        private val searchSelectionCallback = object : SearchSelectionCallback {
+            override fun onCategoryResult(
+                suggestion: SearchSuggestion,
+                results: List<SearchResult>,
+                responseInfo: ResponseInfo
+            ) {
+            }
+
+            override fun onError(e: Exception) {
+                e.printStackTrace()
+            }
+
+            override fun onResult(
+                suggestion: SearchSuggestion,
+                result: SearchResult,
+                responseInfo: ResponseInfo
+            ) {
+                result.coordinate?.let { showMarker(it) }
+            }
+
+            override fun onSuggestions(
+                suggestions: List<SearchSuggestion>,
+                responseInfo: ResponseInfo
+            ) {
+            }
+
+        }
+
         private val clickListener =  { _: Point ->
-            searchBottomSheetView.hide()
+            searchCoordinator.visibility = View.GONE
             false
         }
 
         private val flingListener = {
-            searchBottomSheetView.hide()
+            searchCoordinator.visibility = View.GONE
             centerMap = false
         }
 
         private val rotateListener = object : OnRotateListener {
             override fun onRotate(detector: RotateGestureDetector) {
-                searchBottomSheetView.hide()
+                searchCoordinator.visibility = View.GONE
                 centerMap = false
             }
 
@@ -335,7 +439,7 @@ class SdlService : Service() {
 
         private val shoveListener = object : OnShoveListener {
             override fun onShove(detector: ShoveGestureDetector) {
-                searchBottomSheetView.hide()
+                searchCoordinator.visibility = View.GONE
                 centerMap = false
             }
 
@@ -350,7 +454,7 @@ class SdlService : Service() {
 
         private val scaleListener = object : OnScaleListener {
             override fun onScale(detector: StandardScaleGestureDetector) {
-                searchBottomSheetView.hide()
+                searchCoordinator.visibility = View.GONE
                 centerMap = false
             }
 
@@ -398,10 +502,22 @@ class SdlService : Service() {
             zoomInButton = findViewById(R.id.zoom_in_button)
             zoomOutButton = findViewById(R.id.zoom_out_button)
             recenterButton = findViewById(R.id.recenter_location_button)
-            searchBottomSheetView = findViewById(R.id.search_view)
-            searchPlaceView = findViewById(R.id.search_place_view)
-            searchCategoriesView = findViewById(R.id.search_categories_view)
-            feedbackBottomSheetView = findViewById(R.id.search_feedback_view)
+            searchCoordinator = findViewById(R.id.search_coordinator)
+            searchBox = findViewById(R.id.search_box)
+            searchListView = findViewById(R.id.search_list_view)
+            searchListView.adapter = searchListAdapter
+            searchListView.onItemClickListener =
+                AdapterView.OnItemClickListener { parent, view, position, id ->
+                    val suggestion = searchListAdapter?.getItem(position)
+                    if (suggestion != null) {
+                        searchEngine.select(suggestion, searchSelectionCallback)
+                    }
+                }
+
+            //searchBottomSheetView = findViewById(R.id.search_view)
+            //searchPlaceView = findViewById(R.id.search_place_view)
+            //searchCategoriesView = findViewById(R.id.search_categories_view)
+            //feedbackBottomSheetView = findViewById(R.id.search_feedback_view)
             locationPermissionHelper = LocationPermissionHelper(WeakReference(context))
             val navigationOptions: NavigationOptions = NavigationOptions.Builder(context)
                 .accessToken(context.getString(R.string.mapbox_access_token))
@@ -420,10 +536,11 @@ class SdlService : Service() {
             locationPermissionHelper.checkPermissions {
                 onMapReady()
             }
-            searchBottomSheetView.apply {
-                savedInstanceState?.let {
+            /*with(searchBottomSheetView) {
+                if(savedInstanceState != null) {
                     initializeSearch(savedInstanceState, SearchBottomSheetView.Configuration())
                 }
+
                 hide()
                 isHideableByDrag = true
                 addOnCategoryClickListener{ openCategory(it) }
@@ -455,7 +572,7 @@ class SdlService : Service() {
                 savedInstanceState?.let {
                     initialize(savedInstanceState)
                 }
-            }
+            }*/
 
         }
 
@@ -478,30 +595,27 @@ class SdlService : Service() {
                 pointAnnotationManager?.deleteAll()
                 pointAnnotationManager?.create(it)
                 mapView?.getMapboxMap()?.setCamera(cameraOptions)
-                hideWholeSheet()
+                searchCoordinator.visibility = View.GONE
             }
 
 
         }
 
-        private fun handleOnBackPressed(): Boolean {
+        /*private fun handleOnBackPressed(): Boolean {
             return searchBottomSheetView.handleOnBackPressed() ||
                     searchCategoriesView.handleOnBackPressed() ||
                     feedbackBottomSheetView.handleOnBackPressed()
-        }
+        }*/
 
         override fun onBackPressed() {
-            if (!handleOnBackPressed()) {
-                if(bottomSheetIsShown())
-                {
-                    hideWholeSheet()
-                }
-                else {
-                    super.onBackPressed()
-                }
+            if (searchCoordinator.visibility != View.GONE) {
+                searchCoordinator.visibility = View.GONE
+            } else {
+                super.onBackPressed()
             }
         }
 
+        /*
         private fun resetToRoot() {
             searchBottomSheetView.open()
             feedbackBottomSheetView.hide()
@@ -531,7 +645,7 @@ class SdlService : Service() {
                 searchCategoriesView.open(category)
             }
             searchBottomSheetView.hide()
-        }
+        }*/
 
         private fun registerGestureListeners() {
             mapView?.gestures?.addOnMapClickListener(clickListener)
@@ -572,6 +686,34 @@ class SdlService : Service() {
                     iconAllowOverlap(true)
                 }
             }
+            registerGestureListeners()
+            searchButton.setOnClickListener {
+                searchCoordinator.visibility = View.VISIBLE
+            }
+            searchBox.setEndIconOnClickListener {
+                val searchTerm = searchBox.editText?.text.toString()
+
+                searchEngine.search(
+                    searchTerm,
+                    SearchOptions(),
+                    searchCallback
+                )
+
+            }
+            zoomInButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_IN_SCALE, null) }
+            zoomOutButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_OUT_SCALE, null) }
+            recenterButton.setOnClickListener {
+                centerMap = true
+                val cameraOptionsBuilder = CameraOptions.Builder().zoom(DEFAULT_ZOOM)
+                indicatorPosition?.let {
+                    cameraOptionsBuilder.center(it)
+                }
+                indicatorBearing?.let {
+                    cameraOptionsBuilder.bearing(it)
+                }
+                mapView?.getMapboxMap()?.setCamera(cameraOptionsBuilder.build())
+                pointAnnotationManager?.deleteAll()
+            }
 
         }
 
@@ -609,22 +751,7 @@ class SdlService : Service() {
         override fun onStart() {
             super.onStart()
             mapView?.onStart()
-            registerGestureListeners()
-            searchButton.setOnClickListener { searchBottomSheetView.open() }
-            zoomInButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_IN_SCALE, null) }
-            zoomOutButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_OUT_SCALE, null) }
-            recenterButton.setOnClickListener {
-                centerMap = true
-                val cameraOptionsBuilder = CameraOptions.Builder().zoom(DEFAULT_ZOOM)
-                indicatorPosition?.let {
-                    cameraOptionsBuilder.center(it)
-                }
-                indicatorBearing?.let {
-                    cameraOptionsBuilder.bearing(it)
-                }
-                mapView?.getMapboxMap()?.setCamera(cameraOptionsBuilder.build())
-                pointAnnotationManager?.deleteAll()
-            }
+
         }
 
         override fun onStop() {
