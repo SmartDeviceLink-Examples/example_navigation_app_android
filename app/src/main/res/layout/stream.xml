@@ -67,11 +67,13 @@
         app:tint="@color/white" />
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/search_coordinator"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="20dp"
+        android:visibility="visible"
         android:elevation="@dimen/search_card_elevation">
-
-        <com.mapbox.search.ui.view.SearchBottomSheetView
+        <!--<com.mapbox.search.ui.view.SearchBottomSheetView
             android:id="@+id/search_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
