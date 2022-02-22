@@ -16,5 +16,5 @@
     <string name="telemetry_opt_out_message">Disable collection of telemetry data?</string>
     <string name="opt_out">Opt out</string>
     <string name="cancel">Cancel</string>
-    <string name="phone_screen_message">This app displays a map on a SmartDeviceLink heads-up display instead of this device\'s screen. A SmartDeviceLink connection is required for this app\'s main functionality. Dialogs and browser intents caused by his app will display on your device\'s screen.</string>
+    <string name="phone_screen_message">This app displays a map on a SmartDeviceLink heads-up display instead of this device\'s screen. A SmartDeviceLink connection is required for this app\'s main functionality. Dialogs and browser intents caused by this app will display on this device\'s screen.</string>
 </resources>
