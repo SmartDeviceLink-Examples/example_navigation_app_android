@@ -11,31 +11,25 @@ package com.livio.mobilenav
 import android.Manifest
 import android.app.*
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.view.Display
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.*
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.widget.addTextChangedListener
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import com.mapbox.android.core.location.LocationEngineProvider
 import com.mapbox.android.gestures.RotateGestureDetector
 import com.mapbox.android.gestures.ShoveGestureDetector
@@ -44,7 +38,6 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.CameraOptions
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
-import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.image.image
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
 import com.mapbox.maps.plugin.LocationPuck2D
@@ -53,6 +46,7 @@ import com.mapbox.maps.plugin.annotation.annotations
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationManager
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.createPointAnnotationManager
+import com.mapbox.maps.plugin.attribution.*
 import com.mapbox.maps.plugin.gestures.OnRotateListener
 import com.mapbox.maps.plugin.gestures.OnScaleListener
 import com.mapbox.maps.plugin.gestures.OnShoveListener
@@ -66,21 +60,19 @@ import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.search.*
 import com.mapbox.search.result.SearchResult
 import com.mapbox.search.result.SearchSuggestion
-import com.mapbox.search.ui.view.CommonSearchViewConfiguration
-import com.mapbox.search.ui.view.DistanceUnitType
-import com.mapbox.search.ui.view.SearchBottomSheetView
-import com.mapbox.search.ui.view.category.Category
-import com.mapbox.search.ui.view.category.SearchCategoriesBottomSheetView
-import com.mapbox.search.ui.view.feedback.SearchFeedbackBottomSheetView
-import com.mapbox.search.ui.view.place.SearchPlaceBottomSheetView
+import com.mapbox.search.ui.utils.maki.*
 import com.smartdevicelink.managers.SdlManager
 import com.smartdevicelink.managers.SdlManagerListener
 import com.smartdevicelink.managers.file.filetypes.SdlArtwork
 import com.smartdevicelink.managers.lifecycle.LifecycleConfigurationUpdate
+import com.smartdevicelink.managers.screen.choiceset.KeyboardAutocompleteCompletionListener
+import com.smartdevicelink.managers.screen.choiceset.KeyboardCharacterSetCompletionListener
+import com.smartdevicelink.managers.screen.choiceset.KeyboardListener
 import com.smartdevicelink.protocol.enums.FunctionID
 import com.smartdevicelink.proxy.RPCNotification
 import com.smartdevicelink.proxy.rpc.*
 import com.smartdevicelink.proxy.rpc.enums.*
+import com.smartdevicelink.proxy.rpc.enums.Language
 import com.smartdevicelink.proxy.rpc.listeners.OnRPCNotificationListener
 import com.smartdevicelink.streaming.video.SdlRemoteDisplay
 import com.smartdevicelink.transport.BaseTransportConfig
@@ -90,16 +82,15 @@ import com.smartdevicelink.util.DebugTool
 import com.smartdevicelink.util.SystemInfo
 import java.lang.ref.WeakReference
 import java.util.*
-import com.mapbox.search.ui.R as MapR
-import com.mapbox.search.ui.utils.maki.*
-import com.smartdevicelink.proxy.rpc.enums.Language
+
 
 class SdlService : Service(){
     companion object {
         // Arbitrary for the purposes of this app
-        private const val FOREGROUND_SERVICE_ID = 1234545
-        private const val HASH_ID = "356447790"
+        private const val FOREGROUND_SERVICE_ID = 535655454
+        private const val HASH_ID = "656576757"
         private const val TAG = "SdlService"
+        var sdlManagerReference: WeakReference<SdlManager>? = null
     }
 
     //The manager handles communication between the application and SDL
@@ -161,6 +152,7 @@ class SdlService : Service(){
                         }
                     }
                     transport = MultiplexTransportConfig(this, APP_ID, securityLevel)
+                    transport.setRequiresAudioSupport(false)
                 }
                 BuildConfig.TRANSPORT.equals("TCP") -> {
                     transport =
@@ -247,6 +239,7 @@ class SdlService : Service(){
             )
         }
 
+        sdlManagerReference = WeakReference(sdlManager)
 
         sdlManager?.start()
     }
@@ -312,54 +305,121 @@ class SdlService : Service(){
 
         private var mapView: MapView? = null
         private var pointAnnotationManager: PointAnnotationManager? = null
+        private lateinit var attributionButton: AttributionViewImpl
         private lateinit var locationPermissionHelper: LocationPermissionHelper
         private lateinit var mapboxNavigation: MapboxNavigation
         private lateinit var searchButton: FloatingActionButton
         private lateinit var zoomInButton: FloatingActionButton
         private lateinit var zoomOutButton: FloatingActionButton
         private lateinit var recenterButton: FloatingActionButton
-        private lateinit var searchCoordinator: CoordinatorLayout
-        private lateinit var searchBox: TextInputLayout
+        private lateinit var mapboxLinkLabel: TextView
+        private lateinit var openstreetmapLinkLabel: TextView
+        private lateinit var improveMapLinkLabel: TextView
+        private lateinit var searchLayout: RelativeLayout
         private lateinit var searchListView: ListView
+        private lateinit var toolbar: MaterialToolbar
 
-        @Volatile private var centerMap = false
+        private var searchTerm = ""
+        @Volatile private var centerMap = true
         @Volatile private var indicatorPosition: Point? = null
         @Volatile private var indicatorBearing: Double? = null
 
         private val searchEngine = MapboxSearchSdk.getSearchEngine()
 
         private class SearchViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            lateinit var resultIcon: ImageView
             lateinit var searchResultName: TextView
             lateinit var searchResultAddress: TextView
             lateinit var searchResultDistance: TextView
             lateinit var resultPopulate: ImageView
         }
 
+        private var keyboardListener: KeyboardListener = object : KeyboardListener {
+            override fun onUserDidSubmitInput(inputText: String, event: KeyboardEvent) {
+                when (event) {
+                    KeyboardEvent.ENTRY_VOICE -> {
+                    }
+                    KeyboardEvent.ENTRY_SUBMITTED -> {
+
+                        searchTerm = inputText
+                        searchEngine.search(
+                            inputText,
+                            SearchOptions(),
+                            searchCallback
+                        )
+
+                        searchListView.smoothScrollToPosition(0)
+                        searchLayout.visibility = View.VISIBLE
+
+                    }
+                    else -> {
+                    }
+                }
+            }
+
+            override fun onKeyboardDidAbortWithReason(event: KeyboardEvent) {
+                when (event) {
+                    KeyboardEvent.ENTRY_CANCELLED -> {
+                    }
+                    KeyboardEvent.ENTRY_ABORTED -> {
+                    }
+                    else -> {
+                    }
+                }
+            }
+
+            override fun updateAutocompleteWithInput(
+                currentInputText: String,
+                keyboardAutocompleteCompletionListener: KeyboardAutocompleteCompletionListener
+            ) {
+                // Check the input text and return a list of autocomplete results
+            }
+
+            override fun updateCharacterSetWithInput(
+                currentInputText: String,
+                keyboardCharacterSetCompletionListener: KeyboardCharacterSetCompletionListener
+            ) {
+                // Check the input text and return a set of characters to allow the user to enter
+            }
+
+            override fun onKeyboardDidSendEvent(event: KeyboardEvent, currentInputText: String) {
+                // This is sent upon every event, such as keypresses, cancellations, and aborting
+            }
+
+            override fun onKeyboardDidUpdateInputMask(event: KeyboardEvent) {
+                when (event) {
+                    KeyboardEvent.INPUT_KEY_MASK_ENABLED -> {
+                    }
+                    KeyboardEvent.INPUT_KEY_MASK_DISABLED -> {
+                    }
+                    else -> {
+                    }
+                }
+            }
+        }
+
         private val searchListAdapter = context?.let {
-            object : ArrayAdapter<SearchSuggestion>(it, MapR.layout.mapbox_search_sdk_result_item_layout) {
+            object : ArrayAdapter<SearchSuggestion>(it, R.layout.search_result_item) {
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                     var currentView: View
                     if (convertView != null) {
                         currentView = convertView
                     } else {
-                        currentView = LayoutInflater.from(it).inflate(R.layout.search_list_item, parent, false)
+                        currentView = LayoutInflater.from(it).inflate(R.layout.search_result_item, parent, false)
                         val viewHolder = SearchViewHolder(currentView)
-                        viewHolder.resultIcon = findViewById(MapR.id.result_icon)
-                        viewHolder.searchResultName = findViewById(MapR.id.search_result_name)
-                        viewHolder.searchResultAddress = findViewById(MapR.id.search_result_address)
-                        viewHolder.searchResultDistance = findViewById(MapR.id.search_result_distance)
-                        viewHolder.resultPopulate = findViewById(MapR.id.result_populate)
+                        viewHolder.searchResultName = currentView.findViewById(R.id.search_result_name)
+                        viewHolder.searchResultAddress = currentView.findViewById(R.id.search_result_address)
+                        viewHolder.searchResultDistance = currentView.findViewById(R.id.search_result_distance)
+                        viewHolder.resultPopulate = currentView.findViewById(R.id.result_populate)
                         currentView.tag = viewHolder
                     }
 
                     val searchSuggestion = getItem(position)
                     val viewHolder = currentView.tag as SearchViewHolder
-                    viewHolder.resultIcon.setImageDrawable(null)
-                    viewHolder.resultIcon.visibility = View.GONE
                     viewHolder.searchResultName.text = searchSuggestion?.name
                     viewHolder.searchResultAddress.text = searchSuggestion?.address?.formattedAddress()
-                    viewHolder.searchResultDistance.text = searchSuggestion?.distanceMeters?.let { it1 -> metersToMiles(it1).toString() }
+                    viewHolder.searchResultDistance.text = searchSuggestion?.distanceMeters?.let { meters ->
+                        String.format("%.3f mi", metersToMiles(meters))
+                    }
 
                     return currentView
                 }
@@ -412,18 +472,18 @@ class SdlService : Service(){
         }
 
         private val clickListener =  { _: Point ->
-            searchCoordinator.visibility = View.GONE
+            searchLayout.visibility = View.GONE
             false
         }
 
         private val flingListener = {
-            searchCoordinator.visibility = View.GONE
+            searchLayout.visibility = View.GONE
             centerMap = false
         }
 
         private val rotateListener = object : OnRotateListener {
             override fun onRotate(detector: RotateGestureDetector) {
-                searchCoordinator.visibility = View.GONE
+                searchLayout.visibility = View.GONE
                 centerMap = false
             }
 
@@ -439,7 +499,7 @@ class SdlService : Service(){
 
         private val shoveListener = object : OnShoveListener {
             override fun onShove(detector: ShoveGestureDetector) {
-                searchCoordinator.visibility = View.GONE
+                searchLayout.visibility = View.GONE
                 centerMap = false
             }
 
@@ -454,7 +514,7 @@ class SdlService : Service(){
 
         private val scaleListener = object : OnScaleListener {
             override fun onScale(detector: StandardScaleGestureDetector) {
-                searchCoordinator.visibility = View.GONE
+                searchLayout.visibility = View.GONE
                 centerMap = false
             }
 
@@ -495,6 +555,7 @@ class SdlService : Service(){
             }
             catch (exception: IllegalStateException) {}
 
+            attributionButton = findViewById(R.id.attribution_button)
             searchButton = findViewById(R.id.search_button)
             mapView = findViewById(R.id.map_view)
             val annotationApi = mapView?.annotations
@@ -502,9 +563,52 @@ class SdlService : Service(){
             zoomInButton = findViewById(R.id.zoom_in_button)
             zoomOutButton = findViewById(R.id.zoom_out_button)
             recenterButton = findViewById(R.id.recenter_location_button)
-            searchCoordinator = findViewById(R.id.search_coordinator)
-            searchBox = findViewById(R.id.search_box)
+            mapboxLinkLabel = findViewById(R.id.mapbox_link)
+            openstreetmapLinkLabel = findViewById(R.id.openstreetmap_link)
+            improveMapLinkLabel = findViewById(R.id.improve_map_link)
+            searchLayout = findViewById(R.id.search_coordinator)
+            toolbar = findViewById(R.id.toolbar)
             searchListView = findViewById(R.id.search_list_view)
+
+            val alertDialog = AlertDialog.Builder(MainActivity.getNewestInstance()?.get())
+                .setTitle(context.getString(R.string.telemetry_opt_out))
+                .setMessage(context.getString(R.string.telemetry_opt_out_message))
+                .setPositiveButton(R.string.opt_out) { dialog, _ ->
+                    val telemetry = mapView?.attribution?.getMapAttributionDelegate()?.telemetry()
+                    telemetry?.disableTelemetrySession()
+                    telemetry?.setUserTelemetryRequestState(false)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.cancel){ dialog, _ ->
+                    dialog.cancel()
+                }
+                .create()
+
+            attributionButton.setOnClickListener {
+                alertDialog.show()
+            }
+
+            mapboxLinkLabel.setOnClickListener {
+                val urlIntent = Intent(Intent.ACTION_VIEW)
+                urlIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                urlIntent.data = Uri.parse(context.getString(R.string.mapbox_url))
+                context.startActivity(urlIntent)
+            }
+
+            openstreetmapLinkLabel.setOnClickListener {
+                val urlIntent = Intent(Intent.ACTION_VIEW)
+                urlIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                urlIntent.data = Uri.parse(context.getString(R.string.openstreetmap_url))
+                context.startActivity(urlIntent)
+            }
+
+            improveMapLinkLabel.setOnClickListener {
+                val urlIntent = Intent(Intent.ACTION_VIEW)
+                urlIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                urlIntent.data = Uri.parse(context.getString(R.string.improve_map_url))
+                context.startActivity(urlIntent)
+            }
+
             searchListView.adapter = searchListAdapter
             searchListView.onItemClickListener =
                 AdapterView.OnItemClickListener { parent, view, position, id ->
@@ -514,10 +618,7 @@ class SdlService : Service(){
                     }
                 }
 
-            //searchBottomSheetView = findViewById(R.id.search_view)
-            //searchPlaceView = findViewById(R.id.search_place_view)
-            //searchCategoriesView = findViewById(R.id.search_categories_view)
-            //feedbackBottomSheetView = findViewById(R.id.search_feedback_view)
+
             locationPermissionHelper = LocationPermissionHelper(WeakReference(context))
             val navigationOptions: NavigationOptions = NavigationOptions.Builder(context)
                 .accessToken(context.getString(R.string.mapbox_access_token))
@@ -536,46 +637,8 @@ class SdlService : Service(){
             locationPermissionHelper.checkPermissions {
                 onMapReady()
             }
-            /*with(searchBottomSheetView) {
-                if(savedInstanceState != null) {
-                    initializeSearch(savedInstanceState, SearchBottomSheetView.Configuration())
-                }
-
-                hide()
-                isHideableByDrag = true
-                addOnCategoryClickListener{ openCategory(it) }
-                addOnSearchResultClickListener { searchResult, _ ->
-                    searchResult.coordinate?.let {
-                        showMarker(it)
-                    }
-                }
-                addOnHistoryClickListener { history ->
-                    history.coordinate?.let {
-                        showMarker(it)
-                    }
-                }
-            }
-            searchCategoriesView.apply {
-                initialize(CommonSearchViewConfiguration(DistanceUnitType.IMPERIAL))
-                addOnCloseClickListener{ resetToRoot() }
-                addOnSearchResultClickListener { searchResult, _ ->
-                    searchResult.coordinate?.let {
-                        showMarker(it)
-                    }
-                }
-            }
-            searchPlaceView.apply {
-                initialize(CommonSearchViewConfiguration(DistanceUnitType.IMPERIAL))
-                addOnNavigateClickListener { searchPlace -> showMarker(searchPlace.coordinate) }
-            }
-            feedbackBottomSheetView.apply {
-                savedInstanceState?.let {
-                    initialize(savedInstanceState)
-                }
-            }*/
 
         }
-
 
         private fun showMarker(coordinate: Point) {
             centerMap = false
@@ -588,64 +651,26 @@ class SdlService : Service(){
                 PointAnnotationOptions()
                     .withPoint(coordinate)
                     .withIconImage(it)
-                    .withIconSize(0.50)
+                    .withIconSize(0.25)
             }
 
             pointAnnotationOptions?.let {
                 pointAnnotationManager?.deleteAll()
                 pointAnnotationManager?.create(it)
                 mapView?.getMapboxMap()?.setCamera(cameraOptions)
-                searchCoordinator.visibility = View.GONE
+                searchLayout.visibility = View.GONE
             }
 
 
         }
 
-        /*private fun handleOnBackPressed(): Boolean {
-            return searchBottomSheetView.handleOnBackPressed() ||
-                    searchCategoriesView.handleOnBackPressed() ||
-                    feedbackBottomSheetView.handleOnBackPressed()
-        }*/
-
         override fun onBackPressed() {
-            if (searchCoordinator.visibility != View.GONE) {
-                searchCoordinator.visibility = View.GONE
+            if (searchLayout.visibility != View.GONE) {
+                searchLayout.visibility = View.GONE
             } else {
                 super.onBackPressed()
             }
         }
-
-        /*
-        private fun resetToRoot() {
-            searchBottomSheetView.open()
-            feedbackBottomSheetView.hide()
-            searchPlaceView.hide()
-            searchCategoriesView.hide()
-            searchCategoriesView.cancelCategoryLoading()
-        }
-
-        private fun bottomSheetIsShown(): Boolean {
-            return !searchBottomSheetView.isHidden() ||
-                    !searchPlaceView.isHidden() ||
-                    !searchCategoriesView.isHidden() ||
-                    !feedbackBottomSheetView.isHidden()
-        }
-
-        private fun hideWholeSheet() {
-            searchBottomSheetView.hide()
-            feedbackBottomSheetView.hide()
-            searchPlaceView.hide()
-            searchCategoriesView.hide()
-        }
-
-        private fun openCategory(category: Category, fromBackStack: Boolean = false) {
-            if (fromBackStack) {
-                searchCategoriesView.restorePreviousNonHiddenState(category)
-            } else {
-                searchCategoriesView.open(category)
-            }
-            searchBottomSheetView.hide()
-        }*/
 
         private fun registerGestureListeners() {
             mapView?.gestures?.addOnMapClickListener(clickListener)
@@ -664,6 +689,8 @@ class SdlService : Service(){
         }
 
         private fun onMapReady() {
+            mapView?.attribution?.enabled = false
+            mapView?.attribution?.clickable = false
             mapView?.getMapboxMap()?.setCamera(
                 CameraOptions.Builder()
                     .zoom(DEFAULT_ZOOM)
@@ -688,17 +715,11 @@ class SdlService : Service(){
             }
             registerGestureListeners()
             searchButton.setOnClickListener {
-                searchCoordinator.visibility = View.VISIBLE
+                val cancelId = sdlManagerReference?.get()?.screenManager?.presentKeyboard(context.getString(R.string.search), null, keyboardListener)
             }
-            searchBox.setEndIconOnClickListener {
-                val searchTerm = searchBox.editText?.text.toString()
-
-                searchEngine.search(
-                    searchTerm,
-                    SearchOptions(),
-                    searchCallback
-                )
-
+            toolbar.navigationIcon = AppCompatResources.getDrawable(context, R.drawable.arrow_back)
+            toolbar.setNavigationOnClickListener {
+                searchLayout.visibility = View.GONE
             }
             zoomInButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_IN_SCALE, null) }
             zoomOutButton.setOnClickListener { mapView?.camera?.scaleBy(ZOOM_OUT_SCALE, null) }
@@ -719,29 +740,14 @@ class SdlService : Service(){
 
         private fun initLocationComponent() {
             val locationComponentPlugin = mapView?.location
+
             locationComponentPlugin?.updateSettings {
                 this.enabled = true
                 this.locationPuck = LocationPuck2D(
                     bearingImage = AppCompatResources.getDrawable(
                         context,
-                        R.drawable.mapbox_navigation_puck_icon,
-                    ),
-                    shadowImage = AppCompatResources.getDrawable(
-                        context,
-                        R.drawable.mapbox_user_icon_shadow,
-                    ),
-                    scaleExpression = Expression.interpolate {
-                        linear()
-                        zoom()
-                        stop {
-                            literal(0.0)
-                            literal(0.6)
-                        }
-                        stop {
-                            literal(20.0)
-                            literal(1.0)
-                        }
-                    }.toJson()
+                        R.drawable.location_puck
+                    )
                 )
             }
             locationComponentPlugin?.addOnIndicatorPositionChangedListener(onIndicatorPositionChangedListener)

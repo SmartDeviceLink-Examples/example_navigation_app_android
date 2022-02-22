@@ -1,9 +1,20 @@
 <resources>
-    <string name="app_name" translatable="false">MobileNav</string>
-    <string name="app_short_name" translatable="false">mobilenav</string>
+    <string name="app_name" translatable="false">Livio Navigation</string>
+    <string name="app_short_name" translatable="false">livionav</string>
     <string name="notification_content">Navigation</string>
-    <string name="mapbox_access_token" translatable="false">USE PERSONAL TOKEN</string>
+    <string name="mapbox_access_token" translatable="false">pk.eyJ1Ijoibm9haC1saXZpbyIsImEiOiJja3liejhxZnkwazhyMnJtcmZteWZueHcyIn0.Ljsvlc7_I1VxUtbaW7W5zg</string>
     <string name="zoom_out">Zoom out</string>
     <string name="zoom_in">Zoom in</string>
     <string name="search">Search</string>
+    <string name="mapbox_copyright">© Mapbox</string>\
+    <string name="mapbox_url">https://www.mapbox.com/about/maps/</string>
+    <string name="openstreetmap_copyright">© OpenStreetMap</string>
+    <string name="openstreetmap_url">http://www.openstreetmap.org/copyright</string>
+    <string name="improve_this_map">Improve this map</string>
+    <string name="improve_map_url">https://www.mapbox.com/map-feedback/</string>
+    <string name="telemetry_opt_out">Telemetry Opt-out</string>
+    <string name="telemetry_opt_out_message">Disable collection of telemetry data?</string>
+    <string name="opt_out">Opt out</string>
+    <string name="cancel">Cancel</string>
+    <string name="phone_screen_message">This app displays a map on a SmartDeviceLink heads-up display instead of this device\'s screen. A SmartDeviceLink connection is required for this app\'s main functionality. Dialogs and browser intents caused by his app will display on your device\'s screen.</string>
 </resources>
