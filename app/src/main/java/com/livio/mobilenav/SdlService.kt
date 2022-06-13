@@ -119,7 +119,7 @@ class SdlService : Service(){
         }
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startProxy()
         return START_STICKY
     }
