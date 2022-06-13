@@ -59,7 +59,7 @@ class LocationPermissionHelper(val context: WeakReference<Context>) {
         private var instance: LocationPermissionHelper? = null
 
         fun getNewestInstance(): LocationPermissionHelper? {
-            return null
+            return instance
         }
     }
 }
