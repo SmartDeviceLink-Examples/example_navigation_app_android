@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (!checkBluetoothPermission()) {
                     requestBluetoothPermission()
+                    return
                 }
             }
 
@@ -96,6 +97,9 @@ class MainActivity : AppCompatActivity() {
                         "BLUETOOTH_CONNECT Permission is needed for Bluetooth testing",
                         Toast.LENGTH_LONG
                     ).show()
+                }
+                else {
+                    SdlReceiver.queryForConnectedService(this)
                 }
             }
         }
